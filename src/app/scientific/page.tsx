@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -33,6 +34,13 @@ export default function ScientificCalculatorPage() {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [angleMode, setAngleMode] = useState<'deg' | 'rad'>('rad');
+
+  const convertDegrees = (expr: string) => {
+    return expr.replace(/(sin|cos|tan)\(([^)]+)\)/g, (_, fn, val) => {
+      return `${fn}((${val}) * pi / 180)`;
+    });
+  };
 
   const handleClick = (btn: string) => {
     if (btn === 'C') {
@@ -41,7 +49,10 @@ export default function ScientificCalculatorPage() {
       setAiExplanation(null);
     } else if (btn === '=') {
       try {
-        const converted = expression.replace(/π/g, 'pi').replace(/√/g, 'sqrt');
+        let converted = expression.replace(/π/g, 'pi').replace(/√/g, 'sqrt');
+        if (angleMode === 'deg') {
+          converted = convertDegrees(converted);
+        }
         const res = evaluate(converted);
         setResult(res.toString());
         toast.success('Calculation successful!');
@@ -62,7 +73,10 @@ export default function ScientificCalculatorPage() {
       setAiExplanation(null);
     } else if (key === '=') {
       try {
-        const converted = expression.replace(/π/g, 'pi').replace(/√/g, 'sqrt');
+        let converted = expression.replace(/π/g, 'pi').replace(/√/g, 'sqrt');
+        if (angleMode === 'deg') {
+          converted = convertDegrees(converted);
+        }
         const res = evaluate(converted);
         setResult(res.toString());
         toast.success('Calculation successful!');
@@ -86,7 +100,7 @@ export default function ScientificCalculatorPage() {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expression }),
+        body: JSON.stringify({ expression, angleMode }),
       });
 
       const data = await response.json();
@@ -108,6 +122,17 @@ export default function ScientificCalculatorPage() {
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-indigo-950 via-blue-900 to-black text-white dark:from-gray-200 dark:via-white dark:to-gray-300 dark:text-black px-4 py-10 transition-colors duration-300">
       <div className="backdrop-blur-xl bg-white/10 dark:bg-white/70 border border-white/20 dark:border-gray-400 shadow-2xl rounded-2xl w-full max-w-md p-6 space-y-4">
         <h1 className="text-2xl font-bold text-center">Scientific Calculator</h1>
+
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-white dark:text-gray-800">Mode: {angleMode.toUpperCase()}</div>
+          <Button
+            variant="outline"
+            onClick={() => setAngleMode(prev => (prev === 'deg' ? 'rad' : 'deg'))}
+            className="text-xs"
+          >
+            Toggle to {angleMode === 'deg' ? 'RAD' : 'DEG'}
+          </Button>
+        </div>
 
         <div className="bg-white/20 dark:bg-gray-200 p-4 rounded text-right font-mono text-xl shadow-inner text-white dark:text-black min-h-[3rem] overflow-x-auto whitespace-nowrap">
           <div>{expression}</div>
